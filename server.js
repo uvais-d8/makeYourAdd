@@ -18,6 +18,6 @@ app.use(
   userRoutes
 );
 
-app.listen(8800, () => {
+app.listen(8000, () => {
   console.log("server running on port 8000");
 });
