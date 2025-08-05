@@ -6,6 +6,7 @@ const bcrypt = require("bcrypt");
 const loadHome = async (req, res) => {
   try {
     console.log("loading home");
+    console.log("req.session.user :",req.session.user);
     res.render("home");
   } catch (error) {
     console.log("error while load home");
@@ -35,10 +36,10 @@ const createUser = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Username validation (letters, numbers, dots, underscores, and hyphens)
+    // Username validation (letters and spaces only)
     const usernameRegex = /^[A-Za-z\s]{3,40}$/;
     if (!usernameRegex.test(username)) {
-      return res.status(400).json({ message: "username must need 3 charecters" });
+      return res.status(400).json({ message: "Username must be at least 3 characters and only contain letters/spaces" });
     }
 
     // Email validation
@@ -47,51 +48,78 @@ const createUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid email format" });
     }
 
-    // Password strength validation (min 6 chars, at least 1 number, 1 letter)
+    // Password validation (min 6 chars, at least 1 letter and 1 number)
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@#$%^&+=!]{6,}$/;
     if (!passwordRegex.test(password)) {
       return res.status(400).json({ message: "Password must be at least 6 characters and include a number and a letter" });
     }
 
-    // Check if user already exists
+    // Check for existing user
     const existing = await User.findOne({ email });
     if (existing) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Hash and save user
+    // Hash password and create user
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
 
-    console.log("✅ User created successfully");
+    // 🔒 Save user in session
+    req.session.user = {
+      id: newUser._id,
+      username: newUser.username,
+      email: newUser.email,
+    };
+
+    console.log("✅ User created and session set");
     res.status(200).json({ message: "✅ Signup successful", redirect: "/" });
+
   } catch (err) {
     console.error("Signup error:", err);
     res.status(500).json({ message: "Server error" });
   }
-}; 
+};
 
+
+ const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'muhammeduvais6060@gmail.com',
+    pass: 'wjpx ezmu koex eoxm'
+  }
+});
 const sendEmail = async (req, res) => {
-  const { name, email, subject, message } = req.body; // 'name' instead of 'username'
-  console.log('req.body:', req.body);
+  const { name, email, subject, message } = req.body;
+
+  // Basic validation
+  if (!name || !email || !message) {
+    return res.status(400).json({ message: 'Name, email, and message are required.' });
+  }
+
+  console.log('Incoming email request:', req.body);
+
+  // Get email from session
+  const senderEmail = req.session?.user?.email || 'default@gmail.com';
+  console.log('Sender Email from Session:', req.session?.user);
 
   const mailOptions = {
-    from: `"${name}" <yourapp@gmail.com>`,
-    to: 'makeyouradd@gmail.com',
-    subject: subject || 'New Contact Message', // Use subject from form
+    from: `"${name}" <${senderEmail}>`,
+    to: 'muhammeduvais6060@gmail.com', // Change if needed
+    subject: subject || 'New Contact Message',
     text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
     replyTo: email
   };
 
   try {
     await transporter.sendMail(mailOptions);
-    res.status(200).json({ message: 'Email sent successfully' });
+    res.status(200).json({ message: 'Email sent successfully.' });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ message: 'Error sending email' });
+    console.error('Email send error:', error);
+    res.status(500).json({ message: 'Failed to send email. Please try again later.' });
   }
 };
+
 
  
 const loadLogin = async (req, res) => {
@@ -114,15 +142,22 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: "❌ Incorrect password" });
     }
 
-    // ✅ Login success - optionally set session or token here
+  req.session.user = {
+      id: user._id,
+      email: user.email,
+      name: user.name
+  };
+
+
     console.log('✅ Login successful');
+    console.log('user.email :',user.email);
+    console.log('req.session.email :',req.session.user);
     return res.status(200).json({ message: "✅ Login successful", redirect: "/" });
   } catch (err) {
     console.error("❌ Login error:", err);
     return res.status(500).json({ message: "❌ Server error" });
   }
 };
-
 
 
 
