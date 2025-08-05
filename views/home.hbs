@@ -80,7 +80,7 @@
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
 
-      <a class="btn-getstarted" href="#about">Get Started</a>
+      <a class="btn-getstarted" href="/signup">Get Started</a>
 
     </div>
   </header>
@@ -822,7 +822,7 @@
               <i class="bi bi-graph-up"></i> Marketing
             </li>
           </ul>
-{{!----------------------------------------------------------------------------------- --}}
+          {{!----------------------------------------------------------------------------------- --}}
 
           <div class="row g-4 isotope-container" data-aos="fade-up" data-aos-delay="300">
 
@@ -1028,7 +1028,7 @@
             </div><!-- End Portfolio Item -->
 
           </div><!-- End Portfolio Container -->
-{{!-- --------------------------------------------------------------------------------------- --}}
+          {{!-- --------------------------------------------------------------------------------------- --}}
         </div>
 
       </div>
@@ -1446,7 +1446,7 @@
             <div class="contact-form-wrapper">
               <h2 class="text-center mb-4">Get in Touch</h2>
 
-              <form action="forms/contact.php" method="post" class="php-email-form">
+              <form id="contactForm" action="sendEmail" method="post" class="php-email-form">
                 <div class="row g-3">
                   <div class="col-md-6">
                     <div class="form-group">
@@ -1499,6 +1499,61 @@
             </div>
           </div>
         </div>
+        <script>
+          document.getElementById("contactForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const form = e.target;
+            const loading = document.querySelector(".loading");
+            const errorMessage = document.querySelector(".error-message");
+            const sentMessage = document.querySelector(".sent-message");
+
+            // Reset states
+            loading.style.display = "block";
+            errorMessage.style.display = "none";
+            sentMessage.style.display = "none";
+
+            const formData = {
+              name: form.elements["name"].value,
+              email: form.elements["email"].value,
+              subject: form.elements["subject"].value,
+              message: form.elements["message"].value,
+            };
+
+            try {
+              const response = await fetch("http://localhost:8000/sendEmail", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData),
+              });
+
+              const result = await response.json();
+              loading.style.display = "none";
+
+              if (response.ok) {
+                sentMessage.style.display = "block";
+                form.reset();
+                setTimeout(() => {
+                  sentMessage.style.display = "none";
+                }, 3000); // Hide after 5 seconds
+              } else {
+                errorMessage.textContent = result.message || "Failed to send.";
+                errorMessage.style.display = "block";
+                setTimeout(() => {  
+                  errorMessage.style.display = "none";
+                }, 3000); // Hide after 5 seconds
+              }
+            } catch (err) {
+              loading.style.display = "none";
+              errorMessage.textContent = "Something went wrong. Please try again.";
+              errorMessage.style.display = "block";
+              setTimeout(() => {
+                errorMessage.style.display = "none";
+              }, 3000); // Hide after 5 seconds
+            }
+          });
+        </script>
+
 
       </div>
 
